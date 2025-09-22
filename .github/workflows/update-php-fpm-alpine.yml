@@ -1,8 +1,8 @@
-name: Auto-update PHP-FPM (Alpine) with MySQL
+name: Auto-update PHP-FPM with MySQL
 
 on:
   schedule:
-    - cron: '0 6 * * *'  # Daily at 6 AM UTC
+    - cron: '0 6 * * *'
   workflow_dispatch:
   push:
     branches: [main]
@@ -22,14 +22,40 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check PHP repo for updates
+        id: check
+        run: |
+          # Get latest commit hash for the PHP version branch
+          LATEST_COMMIT=$(curl -s "https://api.github.com/repos/docker-library/php/commits?sha=${{ matrix.php_version }}&path=alpine&per_page=1" | jq -r '.[0].sha')
           
+          # Check against stored commit hash
+          CACHE_FILE="php-${{ matrix.php_version }}-commit.txt"
+          if [ -f "$CACHE_FILE" ]; then
+            OLD_COMMIT=$(cat "$CACHE_FILE")
+          else
+            OLD_COMMIT="none"
+          fi
+          
+          if [ "$LATEST_COMMIT" != "$OLD_COMMIT" ]; then
+            echo "PHP ${{ matrix.php_version }} updated, building..."
+            echo "$LATEST_COMMIT" > "$CACHE_FILE"
+            echo "build_needed=true" >> $GITHUB_OUTPUT
+          else
+            echo "PHP ${{ matrix.php_version }} unchanged, skipping"
+            echo "build_needed=false" >> $GITHUB_OUTPUT
+          fi
+        
+      - name: Commit cache file
+        if: steps.check.outputs.build_needed == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add php-${{ matrix.php_version }}-commit.txt
+          git commit -m "Update PHP ${{ matrix.php_version }} commit cache"
+          git push
+        
       - name: Build and push
+        if: steps.check.outputs.build_needed == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
