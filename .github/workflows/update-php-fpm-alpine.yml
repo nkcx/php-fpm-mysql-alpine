@@ -25,8 +25,8 @@ jobs:
       - name: Check PHP repo for updates
         id: check
         run: |
-          # Get latest commit hash for the PHP version branch
-          LATEST_COMMIT=$(curl -s "https://api.github.com/repos/docker-library/php/commits?sha=${{ matrix.php_version }}&path=alpine&per_page=1" | jq -r '.[0].sha')
+          # Get latest commit hash - try different approach
+          LATEST_COMMIT=$(curl -s "https://api.github.com/repos/docker-library/php/commits" | jq -r '.[0].sha')
           
           # Check against stored commit hash
           CACHE_FILE="php-${{ matrix.php_version }}-commit.txt"
@@ -44,7 +44,6 @@ jobs:
             echo "PHP ${{ matrix.php_version }} unchanged, skipping"
             echo "build_needed=false" >> $GITHUB_OUTPUT
           fi
-        
       - name: Commit cache file
         if: steps.check.outputs.build_needed == 'true'
         run: |
