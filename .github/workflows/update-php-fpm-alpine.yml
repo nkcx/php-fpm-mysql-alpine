@@ -53,14 +53,17 @@ jobs:
           git add php-${{ matrix.php_version }}-commit.txt
           git commit -m "Update PHP ${{ matrix.php_version }} commit cache"
       - name: Push changes
+        if: steps.check.outputs.build_needed == 'true'
         uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Checkout
+        if: steps.check.outputs.build_needed == 'true'
         uses: actions/checkout@v4
         
       - name: Log in to GitHub Container Registry
+        if: steps.check.outputs.build_needed == 'true'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -68,6 +71,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Build and push
+        if: steps.check.outputs.build_needed == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
