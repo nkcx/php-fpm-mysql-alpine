@@ -54,15 +54,11 @@ jobs:
           git config --local user.name "GitHub Action"
           git add php-${{ matrix.php_version }}-commit.txt
           git commit -m "Update PHP ${{ matrix.php_version }} commit cache"
-      - name: Push changes
+      - name: Push Cache Files
         if: steps.check.outputs.build_needed == 'true'
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Checkout
-        if: steps.check.outputs.build_needed == 'true'
-        uses: actions/checkout@v4
+        run: |
+          git pull --rebase origin main
+          git push origin main
         
       - name: Log in to GitHub Container Registry
         if: steps.check.outputs.build_needed == 'true'
