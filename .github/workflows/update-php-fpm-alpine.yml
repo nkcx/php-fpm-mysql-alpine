@@ -21,7 +21,7 @@ jobs:
         
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 
         
@@ -70,7 +70,7 @@ jobs:
           
       - name: Build and push
         if: steps.check.outputs.build_needed == 'true'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           build-args: |
